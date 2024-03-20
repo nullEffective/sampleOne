@@ -1,5 +1,8 @@
+import java.util.logging.Logger
 
-class SimpleBoard(a: Array[Array[String]]) {
+class SimpleBoard(a: Array[Array[String]] = Array.fill(0, 0)("#")) {
+
+  val logger = Logger.getLogger(getClass.getName)
   val rows = a.length
   val cols = a(0).length
   val blobMap: collection.mutable.Map[String, String] = collection.mutable.Map[String, String]()
@@ -16,6 +19,13 @@ class SimpleBoard(a: Array[Array[String]]) {
 
   def getSolutionString(): String = {
     solBoxList.mkString("\n")
+  }
+
+  def getLargestBox(): Int = {
+    if (solBoxList.isEmpty) {
+      return -1
+    }
+    solBoxList(0).size()
   }
 
   def getBoxList(): List[SimpleBox] = {
@@ -40,31 +50,6 @@ class SimpleBoard(a: Array[Array[String]]) {
     Some(v)
   }
 
-  def set(row: Int, col: Int, value: String) = {
-    arr(row)(col) = value
-  }
-
-  def display(): Unit = {
-    for (r <- arr) {
-      println(r.mkString)
-    }
-  }
-
-  def displayResolve(): Unit = {
-    for (row <- 0 until rows) {
-      for (col <- 0 until cols) {
-        val v = resolve(row, col).toInt
-        if (v < 0) {
-          print("-")
-        } else {
-          val s = f"$v%01d"
-          print(s"$s")
-        }
-      }
-      println(s": $row")
-    }
-  }
-
   def resolve(row: Int, col: Int): String = {
     var value: String = arr(row)(col)
     if (!blobMap.contains(value)) {
@@ -72,15 +57,50 @@ class SimpleBoard(a: Array[Array[String]]) {
     }
     var resolve = blobMap(value)
     while (value != resolve) {
-      //println(s"resolving $value:$resolve")
       value = resolve
       resolve = blobMap.getOrElse(value, value + "!")
     }
-    resolve.toString
+    resolve
   }
 
-  def blobSize(): Int = {
-    blobMap.values.toSet.size
+  def set(row: Int, col: Int, value: String) = {
+    arr(row)(col) = value
+  }
+
+  def displayResolve(): String = {
+    val sb: StringBuilder = StringBuilder()
+    sb.append("\n")
+    val space = " "
+    for (row <- 0 until rows) {
+      for (col <- 0 until cols) {
+        val v = resolve(row, col).toInt
+        if (v < 0) {
+          sb.append(space)
+        } else {
+          val display : Char = (v + 'a'.toInt).toChar
+          //val s = f"$display%02d"
+          sb.append(s"$display")
+        }
+      }
+      sb.append(s": $row\n")
+    }
+    logger.info(sb.toString())
+    sb.toString()
+  }
+
+  def display(): Unit = {
+    val sb: StringBuilder = StringBuilder()
+    sb.append("\n")
+    for (r <- arr) {
+      sb.append(r.mkString(""))
+      sb.append("\n")
+    }
+    logger.info(sb.toString())
+  }
+
+  def blobListSize(): Int = {
+    val s = blobMap.values.toSet
+    s.size
   }
   /*
     def visitorValue(func: (v: String) => Unit): Unit = {

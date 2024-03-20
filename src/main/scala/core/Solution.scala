@@ -1,78 +1,92 @@
 
+
+import java.nio.file.*
+import java.util.logging.Logger
+import scala.collection.JavaConverters.*
+import scala.collection.mutable.ListBuffer
 import scala.io.StdIn.readLine
 
-class SimpleBox(val value: String = "N") {
-
-  var x: Int = Int.MaxValue
-  var y: Int = Int.MaxValue
-  var x2: Int = -1
-  var y2: Int = -1
-
-  def size(): Int = {
-    (x2 - x) * (y2 - y)
-  }
-
-  def intersect(other: SimpleBox): Boolean = {
-    if (other == this) {
-      return false
-    }
-    intersect(x, y, other.x, other.y, other.x2, other.y2) &&
-      intersect(x2, y2, other.x, other.y, other.x2, other.y2) &&
-      intersect(x, y2, other.x, other.y, other.x2, other.y2) &&
-      intersect(x2, y, other.x, other.y, other.x2, other.y2)
-  }
-
-  def intersect(x: Int, y: Int, otherX: Int, otherY: Int, otherX2: Int, otherY2: Int): Boolean = {
-    otherX <= x && x <= otherX2 &&
-      y >= otherY &&
-      y <= otherY2
-  }
-
-  override def toString: String = {
-    s"$value=[$x:$y,$x2:$y2]"
-  }
-
-  def augment(newX: Int, newY: Int): SimpleBox = {
-
-    if (newX < x) {
-      x = newX
-    }
-    if (newX > x2) {
-      x2 = newX
-    }
-    if (newY < y) {
-      y = newY
-    }
-    if (newY > y2) {
-      y2 = newY
-    }
-    this
-  }
-}
 
 object SolutionOne {
 
+  val logger = Logger.getLogger(getClass.getName)
+  //val board = input(inputString)
+
   def main(args: Array[String]): Unit = {
-    val i = readLines()
-    val solution = input(i)
-    println(solution)
-    println("---end trans---")
+
+    var inputString = ""
+    val inputList: ListBuffer[String] = ListBuffer[String]()
+    if (args.isEmpty) {
+      inputList :+ readLines()
+    } else {
+      val fileName = args(0)
+      readFromFiles(fileName, inputList)
+    }
+
+    for (inputString: String <- inputList) {
+      val board = input(inputString)
+      if (board.solBoxList.isEmpty) {
+        System.exit(9)
+      }
+      println(board.getSolutionString())
+      println()
+    }
+    System.exit(0)
   }
 
-  def input(input: String): Board = {
+  def readFromFiles(fileName: String, inputList: ListBuffer[String]): Unit = {
+    val path: Path = FileSystems.getDefault.getPath(fileName)
+    val fileList = ListBuffer[String]()
+    if (Files.isDirectory(path)) {
+      val files = Files.list(path).iterator().asScala.toList
+      for (f <- files) {
+        fileList.addOne(f.toString)
+      }
+      println(fileList.mkString(" "))
+    } else {
+      fileList += fileName
+    }
+    for (f: String <- fileList) {
+      val path = FileSystems.getDefault.getPath(f)
+      val s = scala.io.Source.fromFile(f).mkString
+      inputList += s
+    }
+  }
+
+  def input(input: String): SimpleBoard = {
     val split = checkInput(input)
     val board = createBoard(split)
     findBlobs(board)
     val boxList = findBoxes(board)
     val solution = solve(boxList)
     solution.isEmpty match {
-      case  true => new Throwable("No solution found")
-      case _ => board.solution = solution
+      case true => new Throwable("No solution found")
+      case _ => board.solBoxList = solution
     }
     board
   }
 
-  def createBoard(split: Array[String]): Board = {
+  def checkInput(rawInput: String): Array[String] = {
+    val input = rawInput.trim
+    val split = input.split("\n")
+    if (split.isEmpty) {
+      throw new IllegalArgumentException(s"Bad input, no board found. [$input]")
+    }
+    val length = split(0).length
+    for (line <- split) {
+      if (line.length != length) {
+        throw new IllegalArgumentException(s"Bad input, size mismatch $length not equal to ${line.length}\nfirstLine $split(0)\nline [$line]")
+      }
+      for (c <- line) {
+        if (c != '-' && c != '*') {
+          throw new IllegalArgumentException(s"Bad input, invalid character [$c] in line [$line]")
+        }
+      }
+    }
+    split
+  }
+
+  def createBoard(split: Array[String]): SimpleBoard = {
     val rows = split.length
     val cols = split(0).length
     val arr: Array[Array[String]] = Array.fill(rows, cols)("#");
@@ -84,10 +98,10 @@ object SolutionOne {
         arr(row)(col) = c.toString
       }
     }
-    new Board(arr)
+    new SimpleBoard(arr)
   }
 
-  def findBlobs(board: Board): Board = {
+  def findBlobs(board: SimpleBoard): SimpleBoard = {
     var currentBlob: String = board.blobMap.size.toString
     val blobMap = board.blobMap
 
@@ -111,12 +125,9 @@ object SolutionOne {
           }
 
           board.set(row, col, currentBlob)
-          println(s"setting $row:$col $currentBlob")
           if (!blobMap.contains(currentBlob)) {
             blobMap(currentBlob) = currentBlob
           }
-          //println(s" $row: $col = blobSize ${board.blobMap.size} current=$currentBlob right=[$leftValue up=$upValue]")
-          //println("blobMap: "  + board.blobMap.mkString(","))
         } else {
           currentBlob = (row + blobMap.size).toString
         }
@@ -124,69 +135,48 @@ object SolutionOne {
       currentBlob = (row + blobMap.size).toString
     }
 
-    println("pre blobbed....")
-    board.display()
-    println("blobbed....")
-
-    board.displayResolve()
     board
   }
 
-  def findBoxes(board: Board): List[SimpleBox] = {
+  def findBoxes(board: SimpleBoard): List[SimpleBox] = {
     val list = board.getBoxList()
     list;
   }
 
   def solve(boxList: List[SimpleBox]): List[SimpleBox] = {
     var r: Boolean = false
-    var copyList: List[SimpleBox] = boxList filterNot  (n => n.intersect(boxList(0)))
 
-    while !r && !copyList.isEmpty do {
-      for (box <- copyList) {
-        val filterList: List[SimpleBox] = copyList filterNot  (n => n.intersect(boxList(0)))
-        val s: Int = filterList.size
-        val s2: Int = copyList.size
-        r = s == s2
-        copyList = filterList
-      }
-    }
-    if (copyList.isEmpty) {
-      return copyList
-    }
-    var result: SimpleBox = copyList(0)
-    for (box <- copyList) {
-      if (box.size() > result.size()) {
-        result = box
-      }
-    }
-    copyList filter (n => n.size() >= result.size())
-  }
-
-  def checkInput(rawInput: String): Array[String] = {
-    val input = rawInput.trim
-    val split = input.split("\n")
-    if (split.isEmpty) {
-      throw new IllegalArgumentException(s"Bad input, no board found. [$input]")
-    }
-    val length = split(0).length
-    for (line <- split) {
-      if (line.length != length) {
-        throw new IllegalArgumentException(s"Bad input, size mismatch $length not equal to ${line.length}\nfirstLine $split(0)\nline [$line]")
-      }
-      for (c <- line) {
-        if (c != '-' && c != '*') {
-          throw new IllegalArgumentException(s"Bad input, invalid character [$c] in line [$line]")
+    for (i <- 0 until boxList.length) {
+      val box = boxList(i)
+      for (j <- i + 1 until boxList.length) {
+        val otherBox = boxList(j)
+        if (!box.isvalid) {
+        } else {
+          for (otherBox <- boxList) {
+            if (box.intersect(otherBox)) {
+              box.setInvalid()
+              otherBox.setInvalid()
+            }
+          }
         }
       }
     }
-    split
+    val resultList = boxList.filter(n => n.isInvalid())
+    if (resultList.isEmpty) {
+      return resultList
+    }
+    var largestBox: SimpleBox = resultList(0)
+    for (box <- resultList) {
+      if (box.size() > largestBox.size()) {
+        largestBox = box
+      }
+    }
+    resultList.filter(n => n.size() >= largestBox.size())
   }
 
   private def readLines(): String = {
     val builder: StringBuilder = new StringBuilder()
-
     var line = "!!!";
-
     while (!line.trim.equalsIgnoreCase("")) {
       line = readLine()
       if (line.length != 0) {
