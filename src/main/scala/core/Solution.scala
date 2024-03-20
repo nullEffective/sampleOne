@@ -10,14 +10,14 @@ import scala.io.StdIn.readLine
 object SolutionOne {
 
   val logger = Logger.getLogger(getClass.getName)
-  //val board = input(inputString)
 
   def main(args: Array[String]): Unit = {
 
     var inputString = ""
     val inputList: ListBuffer[String] = ListBuffer[String]()
     if (args.isEmpty) {
-      inputList :+ readLines()
+      val in = readLines()
+      inputList.addOne(in) 
     } else {
       val fileName = args(0)
       readFromFiles(fileName, inputList)
