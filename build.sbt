@@ -7,5 +7,11 @@ lazy val root = (project in file("."))
     name := "sampleOne"
   )
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.15" % "test"
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.18"
+libraryDependencies ++= Seq(
+
+  // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api-scala
+  "org.apache.logging.log4j" % "log4j-core" % "2.23.1",
+  "org.apache.logging.log4j" % "log4j-core" % "2.22.1" % Runtime,
+  "org.scalatest" %% "scalatest" % "3.2.17" % "test",
+  "org.scalactic" %% "scalactic" % "3.2.18"
+)
