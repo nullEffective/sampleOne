@@ -37,6 +37,18 @@ class SolutionTest extends AnyFlatSpec {
     validate(inputO, 1, 1, 1)
   }
 
+  "Check blobs F" should "should equal solutionBox" in {
+    val input: String =
+      """|------
+         |----*-
+         |----*-
+         |---**-
+         |---*--
+         |---*--
+         |------""".stripMargin
+    validate(input, 4, 1, 1, 10)
+  }
+  
   "Check blobs Reverse C" should "should equal solutionBox" in {
     val inputReverseC: String =
       """|------

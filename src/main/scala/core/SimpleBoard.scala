@@ -82,7 +82,7 @@ class SimpleBoard(a: Array[Array[String]] = Array.fill(0, 0)("#")) {
           sb.append(s"$display")
         }
       }
-      sb.append(s": $row\n")
+      sb.append(s": ${row+1}\n")
     }
     logger.info(sb.toString())
     sb.toString()
